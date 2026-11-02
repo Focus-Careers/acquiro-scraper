@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { ai, MODELS } from './ai.js';
 import { Pinecone } from '@pinecone-database/pinecone';
 import { insertListing, checkListingExists, getBubbleIdByListingId, touchListing } from './bubbleClient.js';
 import { classifySectors } from './sectorClassifier.js';
@@ -75,7 +75,7 @@ export async function processAndIndexListing(scrapedData) {
   if (!bubbleId) throw new Error('insertListing returned no id');
 
   // 2. Build text to embed
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
   const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
   const pineconeIndexName = process.env.PINECONE_INDEX_NAME;
   if (!pineconeIndexName) throw new Error('PINECONE_INDEX_NAME env var is not set');
@@ -87,7 +87,7 @@ export async function processAndIndexListing(scrapedData) {
   let vector;
   try {
     const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
+      model: MODELS.embed,
       input: goldenString,
     });
     vector = embeddingResponse.data[0].embedding;

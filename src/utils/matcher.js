@@ -3,7 +3,7 @@
  * both from the HTTP handler and from the daily pipeline runner.
  */
 
-import OpenAI from 'openai';
+import { ai, MODELS } from './ai.js';
 import { Pinecone } from '@pinecone-database/pinecone';
 import { getBuyerInfo, getExistingMatches, getDismissedMatchesWithReasons } from './bubbleClient.js';
 import { supabase } from './supabaseClient.js';
@@ -294,9 +294,9 @@ export async function generateMatchesForUser(userId) {
 
   // 4. Build golden string and embed
   const queryText = buildGoldenString(p);
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
   const embRes = await openai.embeddings.create({
-    model: 'text-embedding-3-small',
+    model: MODELS.embed,
     input: queryText || 'business for sale UK',
   });
   const vector = embRes.data[0].embedding;

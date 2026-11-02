@@ -11,7 +11,7 @@
  */
 
 import { createHash } from 'crypto';
-import OpenAI from 'openai';
+import { ai, MODELS } from './ai.js';
 import {
   getActiveSubscribers,
   getUserDetails,
@@ -111,7 +111,7 @@ function formatPursuitsForPrompt(pursuits) {
 }
 
 async function generateEmailBody({ agentName, userName, matches, isNewMatches, personality, style, traits, criteriaText, emailsSent, activePursuits, featureAnnouncements, recentEmailHistory }) {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
 
   const matchesText = matches
     .map((m, i) => `${i + 1}. ${m}`)
@@ -187,7 +187,7 @@ ${matchInstructions}
 - Return clean HTML (no \`\`\`html wrapper). Use <p>, <ul>, <li>, <strong> tags only.`;
 
   const response = await openai.responses.create({
-    model: 'gpt-4o-mini',
+    model: MODELS.fast,
     input: prompt,
   });
 

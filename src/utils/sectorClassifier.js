@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { ai, MODELS } from './ai.js';
 
 /**
  * The canonical sector labels — must exactly match the Bubble option set values
@@ -47,9 +47,9 @@ export async function classifySectors(businessName, rawSector, description) {
   if (description)  parts.push(`Description: ${String(description).slice(0, 300)}`);
 
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = ai();
     const res = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: MODELS.fast,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user',   content: parts.join('\n') },

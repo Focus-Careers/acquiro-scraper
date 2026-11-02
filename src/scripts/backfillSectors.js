@@ -90,7 +90,7 @@ async function main() {
   const pineconeIndex    = process.env.PINECONE_INDEX_NAME;
   if (!pineconeApiKey)  throw new Error('PINECONE_API_KEY env var is not set');
   if (!pineconeIndex)   throw new Error('PINECONE_INDEX_NAME env var is not set');
-  if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY env var is not set');
+  if (!process.env.AI_GATEWAY_API_KEY) throw new Error('AI_GATEWAY_API_KEY env var is not set');
 
   console.log(`[backfill] Starting sector backfill${DRY_RUN ? ' (DRY RUN)' : ''}${FORCE ? ' (FORCE)' : ''}`);
 

@@ -9,13 +9,13 @@
  * Required env vars:
  *   BUBBLE_API_KEY            — for user migration only
  *   SUPABASE_URL, SUPABASE_SECRET_KEY
- *   OPENAI_API_KEY, PINECONE_API_KEY, PINECONE_INDEX_NAME
+ *   AI_GATEWAY_API_KEY, PINECONE_API_KEY, PINECONE_INDEX_NAME
  *   CSV_DIR                   — path to Bubble CSV export folder
  *                               e.g. C:\Users\toby\Documents\acquiro_data
  */
 
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
+import { ai, MODELS } from '../utils/ai.js';
 import { Pinecone } from '@pinecone-database/pinecone';
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
@@ -31,7 +31,7 @@ const CSV_DIR = process.env.CSV_DIR;
 if (!CSV_DIR) throw new Error('CSV_DIR required — set to path of Bubble CSV export folder');
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = ai();
 const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
 const pineconeIndex = pinecone.index(process.env.PINECONE_INDEX_NAME);
 
@@ -554,7 +554,7 @@ async function reindexPinecone() {
     let embeddings;
     try {
       const res = await openai.embeddings.create({
-        model: 'text-embedding-3-small',
+        model: MODELS.embed,
         input: goldenStrings,
       });
       embeddings = res.data;

@@ -11,7 +11,7 @@
  *   7. Send reply via SendGrid, save agent reply to Bubble
  */
 
-import OpenAI from 'openai';
+import { ai, MODELS } from './ai.js';
 import { SECTOR_LABELS } from './sectorClassifier.js';
 import {
   getEmailRecordByThreadId,
@@ -143,7 +143,7 @@ Classify the intent of the latest user reply as exactly one of:
 
 Reply with just the classification word, nothing else.`;
 
-  const response = await openai.responses.create({ model: 'gpt-4o-mini', input: prompt });
+  const response = await openai.responses.create({ model: MODELS.fast, input: prompt });
   const raw = (response.output_text ?? '').trim().toLowerCase();
   if (raw.includes('specific_listing'))  return 'specific_listing';
   if (raw.includes('pursue_status'))     return 'pursue_status';
@@ -169,7 +169,7 @@ ${historyText}
 
 Return a JSON array of exact business name strings as they appear in the thread. E.g. ["Acme Engineering Ltd", "Northern Pubs Group"]. If no businesses are mentioned, return [].`;
 
-  const response = await openai.responses.create({ model: 'gpt-4o-mini', input: prompt });
+  const response = await openai.responses.create({ model: MODELS.fast, input: prompt });
   const raw = (response.output_text ?? '').trim();
   const match = raw.match(/\[[\s\S]*\]/);
   if (!match) return [];
@@ -197,7 +197,7 @@ ${emailText}
 
 Return only the business name as a plain string, nothing else. If you cannot identify a specific business, return an empty string.`;
 
-  const response = await openai.responses.create({ model: 'gpt-4o-mini', input: prompt });
+  const response = await openai.responses.create({ model: MODELS.fast, input: prompt });
   return (response.output_text ?? '').trim().replace(/^["']|["']$/g, '');
 }
 
@@ -217,7 +217,7 @@ ${emailText}
 
 Return a JSON array of business name strings, e.g. ["Business A", "Business B"]. If you cannot identify any specific businesses, return [].`;
 
-  const response = await openai.responses.create({ model: 'gpt-4o-mini', input: prompt });
+  const response = await openai.responses.create({ model: MODELS.fast, input: prompt });
   const raw = (response.output_text ?? '').trim();
   const match = raw.match(/\[[\s\S]*\]/);
   if (!match) return [];
@@ -371,7 +371,7 @@ Instructions:
 - Do not add a sign-off — added separately.
 - Return clean HTML (no \`\`\`html wrapper). Use <p>, <ul>, <li>, <strong> tags only.`;
 
-  const response = await openai.responses.create({ model: 'gpt-4o-mini', input: prompt });
+  const response = await openai.responses.create({ model: MODELS.fast, input: prompt });
   const body = response.output_text ?? '';
   return `${body}\n<p>${agentName}</p>`;
 }
@@ -394,7 +394,7 @@ ${emailText}
 
 Return only valid JSON with the fields explicitly updated. If nothing was clearly updated, return {}.`;
 
-  const response = await openai.responses.create({ model: 'gpt-4o-mini', input: prompt });
+  const response = await openai.responses.create({ model: MODELS.fast, input: prompt });
   const raw = (response.output_text ?? '').trim();
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) return {};
@@ -461,7 +461,7 @@ export async function handleUserReply({ threadId, fromEmail, emailText, toAgentE
   const buyerContext = formatBuyerContext(buyerInfo);
   const historyText  = formatThreadHistory(threadHistory, agentName);
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
 
   // 4. Classify intent
   const intent = await classifyIntent(openai, { emailText, historyText, buyerContext });

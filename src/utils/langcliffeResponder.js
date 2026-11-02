@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { ai, MODELS } from './ai.js';
 import { Pinecone } from '@pinecone-database/pinecone';
 import {
   getBuyerInfo,
@@ -176,7 +176,7 @@ async function sendViaSendGrid({ from, fromName, to, subject, body, messageId = 
 // ── Draft email generation ────────────────────────────────────────────────────
 
 async function generateDraftBody({ listing, buyerProfile, agentName, agentEmail }) {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
 
   const contactFirstName = listing.langcliffeContactName?.split(' ')[0] ?? 'there';
   const companyOverview  = getField(buyerProfile, 'company_overview') ?? '';
@@ -205,7 +205,7 @@ Structure:
 Keep it concise — under 200 words total. Do NOT include a subject line. Plain text only.`;
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: MODELS.fast,
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.4,
   });
@@ -229,7 +229,7 @@ async function scoreListing({ bubbleId, listing, buyerProfile, openai, pineconeI
     // Ghost listing or fetch failed — re-embed the listing golden string
     console.warn(`[langcliffe] No Pinecone vector for ${bubbleId}, re-embedding listing`);
     const embRes = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
+      model: MODELS.embed,
       input: buildListingGoldenString(listing),
     });
     return { vector: embRes.data[0].embedding, fromPinecone: false };
@@ -272,10 +272,10 @@ export async function processLangcliffeListings({ userId, listingsWithBubbleIds,
   const exclKeywords   = expandSectorKeywords(excl);
 
   // 3. Embed buyer golden string
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
   const buyerText = buildGoldenString(p);
   const buyerEmbRes = await openai.embeddings.create({
-    model: 'text-embedding-3-small',
+    model: MODELS.embed,
     input: buyerText || 'business acquisition UK',
   });
   const buyerVector = buyerEmbRes.data[0].embedding;
@@ -422,7 +422,7 @@ export async function sendApprovedOutreach(outreachId) {
 // ── Reply handling ────────────────────────────────────────────────────────────
 
 async function generateReplyBody({ outreach, inboundMessage, buyerProfile, agentName, agentEmail }) {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
 
   const contactFirstName = outreach.langcliffe_contact
     ?.match(/<([^>]+)>/)?.[1]?.split('@')[0]?.replace(/[._-]/g, ' ')
@@ -445,7 +445,7 @@ ${historySection}The broker (${contactFirstName}) has now replied:
 Write a concise, professional reply (under 150 words). Plain text only, no subject line. Respond naturally and appropriately to whatever they have said — whether it's a question, asking for more info, sending an NDA, confirming next steps, or anything else. When referring to the acquiring company, use "${companyName}". Sign off: ${agentName} | ${agentEmail}`;
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: MODELS.fast,
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.4,
   });
@@ -548,7 +548,7 @@ export async function rewriteReplyDraft(outreachId, feedback) {
   const profileRes   = await getBuyerInfo(userId);
   const buyerProfile = profileRes?.results?.[0] ?? {};
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
 
   const feedbackSection = feedback ? `\n\nAdmin feedback on the previous reply:\n"${feedback}"\nPlease address this in the rewrite.` : '';
   const contactFirstName = outreach.langcliffe_contact?.split('@')[0]?.replace(/[._-]/g, ' ') ?? 'there';
@@ -569,7 +569,7 @@ Context:
 - Agent signing off: ${agentName} | ${agentEmail}`;
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: MODELS.fast,
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.4,
   });
@@ -610,7 +610,7 @@ export async function rewriteOutreachDraft(outreachId, feedback) {
   const agentName  = agent?.name ?? 'Your Agent';
   const agentEmail = agent?.email ?? 'agent@acquiro.ai';
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
 
   const contactFirstName = outreach.langcliffe_contact?.split('@')[0].replace('.', ' ') ?? 'there';
   const companyOverview  = getField(p, 'company_overview') ?? '';
@@ -635,7 +635,7 @@ Context:
 - Agent signing off: ${agentName} | ${agentEmail}`;
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: MODELS.fast,
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.4,
   });
@@ -649,7 +649,7 @@ Context:
 // ── NDA handling ──────────────────────────────────────────────────────────────
 
 async function generateAcknowledgmentBody({ outreach, agentName, agentEmail, isReplacement = false, replacementContext = '' }) {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
 
   const contactFirstName = outreach.langcliffe_contact
     ?.match(/<([^>]+)>/)?.[1]?.split('@')[0]?.replace(/[._-]/g, ' ')
@@ -677,7 +677,7 @@ ${contentInstruction}
 Under 100 words. Plain text only. No subject line.`;
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: MODELS.fast,
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.4,
   });
@@ -686,7 +686,7 @@ Under 100 words. Plain text only. No subject line.`;
 }
 
 async function generateNDAReturnBody({ outreach, agentName, agentEmail }) {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
 
   const contactFirstName = outreach.langcliffe_contact
     ?.match(/<([^>]+)>/)?.[1]?.split('@')[0]?.replace(/[._-]/g, ' ')
@@ -708,7 +708,7 @@ Do not include any placeholder text such as [Your Name], [Your Position], [Your 
 Under 80 words. Plain text only. No subject line.`;
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: MODELS.fast,
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.4,
   });
@@ -721,7 +721,7 @@ Under 80 words. Plain text only. No subject line.`;
  * Uploads the PDF to Bubble, generates acknowledgment draft, notifies user.
  */
 async function generateUserNDAEmail({ outreach, inboundMessage, agentName, agentEmail, buyerProfile, userName, agentPersonality, agentTraits, agentStyle, agentType }) {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
 
   const listingRef        = outreach.listing_id?.replace('langcliffe_', '') ?? '';
   const businessName      = outreach.business_name ?? 'a business opportunity';
@@ -771,7 +771,7 @@ ${contextBlock || '(No prior conversation — this is the first response from th
 Sign off as: ${agentName} | ${agentEmail}`;
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: MODELS.fast,
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.5,
   });
@@ -809,7 +809,7 @@ function extractIMDetails(emailText) {
 }
 
 async function generateIMUserEmail({ outreach, agentName, agentEmail, imUrl, imPassword, buyerProfile }) {
-  const openai        = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai        = ai();
   const listingRef    = outreach.listing_id?.replace('langcliffe_', '') ?? '';
   const businessName  = outreach.business_name ?? 'a business opportunity';
   const companyOverview = getField(buyerProfile, 'company_overview') ?? '';
@@ -834,7 +834,7 @@ Under 200 words. Plain text only, no markdown. No subject line.
 Sign off as: ${agentName} | ${agentEmail}`;
 
   const completion = await openai.chat.completions.create({
-    model:       'gpt-4o-mini',
+    model:       MODELS.fast,
     messages:    [{ role: 'user', content: prompt }],
     temperature: 0.5,
   });

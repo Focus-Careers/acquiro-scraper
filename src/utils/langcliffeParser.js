@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { ai, MODELS } from './ai.js';
 
 /**
  * Detects and parses Langcliffe deal teasers from forwarded emails.
@@ -20,10 +20,10 @@ export async function parseLangcliffeEmail(emailText) {
   }
 
   // Use OpenAI to extract structured listing data from the innermost teaser
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = ai();
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: MODELS.fast,
     response_format: { type: 'json_object' },
     messages: [
       {
